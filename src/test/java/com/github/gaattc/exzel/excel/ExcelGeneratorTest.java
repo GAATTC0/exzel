@@ -86,7 +86,7 @@ public class ExcelGeneratorTest {
                     Cell expectCell = expectCellIterator.next();
                     Cell cell = cellIterator.next();
                     Assert.assertEquals(expectCell.toString(), cell.toString());
-                    Assert.assertEquals(expectCell.getCellType(), cell.getCellType());
+                    Assert.assertEquals(expectCell.getCellTypeEnum(), cell.getCellTypeEnum());
                 }
             }
         }
