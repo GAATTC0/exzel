@@ -39,16 +39,16 @@ public class ExcelGenerator {
     /**
      * Map<sheetName, Table<row, column, data>>
      */
-    private static final Map<String, Table<Integer, Integer, Object>> WORKBOOK_DATA = new HashMap<>();
+    private final Map<String, Table<Integer, Integer, Object>> WORKBOOK_DATA = new HashMap<>();
     /**
      * Table<sheetName, cloNum, ExcelStyle>
      */
-    private static final Table<String, Integer, ExcelStyle> WORKBOOK_HEADER_STYLE = HashBasedTable.create();
+    private final Table<String, Integer, ExcelStyle> WORKBOOK_HEADER_STYLE = HashBasedTable.create();
     /**
      * Table<sheetName, cloNum, cloName>
      */
-    private static final Table<String, Integer, String> WORKBOOK_COLUMN_NAME = HashBasedTable.create();
-    private static final Map<ExcelStyle, CellStyle> STYLE_CACHE = new HashMap<>();
+    private final Table<String, Integer, String> WORKBOOK_COLUMN_NAME = HashBasedTable.create();
+    private final Map<ExcelStyle, CellStyle> STYLE_CACHE = new HashMap<>();
     private final SXSSFWorkbook workBook = new SXSSFWorkbook();
     private final Object source;
 
@@ -138,7 +138,7 @@ public class ExcelGenerator {
         }
     }
 
-    private static void checkConflict(Table<Integer, Integer, Object> sheet, int columnIndex, int row, Object data) {
+    private void checkConflict(Table<Integer, Integer, Object> sheet, int columnIndex, int row, Object data) {
         Object conflictValue = sheet.get(row, columnIndex);
         if (null != conflictValue) {
             throw new IllegalArgumentException(
@@ -191,7 +191,7 @@ public class ExcelGenerator {
     }
 
     @Nullable
-    private static CellStyle createStyle(Workbook workbook, ExcelStyle excelStyle) {
+    private CellStyle createStyle(Workbook workbook, ExcelStyle excelStyle) {
         if (null == excelStyle) {
             return null;
         }
