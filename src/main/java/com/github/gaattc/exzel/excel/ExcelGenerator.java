@@ -35,6 +35,7 @@ import java.util.Map;
 public class ExcelGenerator {
 
     private static final int DEFAULT_FIELD_START_ROW = 0;
+    private static final String NULL = "";
     private static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     /**
      * Map<sheetName, Table<row, column, data>>
@@ -131,11 +132,18 @@ public class ExcelGenerator {
     }
 
     private Object tryFormatDateTime(Object data, boolean tryFormatDateTime) {
+        data = nullless(data);
         if (tryFormatDateTime && Long.class.isAssignableFrom(data.getClass())) {
             return DateFormatUtils.format((Long) data, PATTERN);
         } else {
             return data;
         }
+    }
+
+    private Object nullless(Object data) {
+        return null == data
+                ? NULL
+                : data;
     }
 
     private void checkConflict(Table<Integer, Integer, Object> sheet, int columnIndex, int row, Object data) {
