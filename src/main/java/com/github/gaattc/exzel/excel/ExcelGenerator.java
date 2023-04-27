@@ -123,7 +123,7 @@ public class ExcelGenerator {
         if (innerIterable) {
             Iterable<?> iterableField = (Iterable<?>) field.get(source);
             for (Object fieldObj : iterableField) {
-                dataBinding(fieldObj, startRow++);
+                dataBinding(fieldObj, startRow + 1);
             }
         } else {
             dataBinding(field.get(source), startRow);
