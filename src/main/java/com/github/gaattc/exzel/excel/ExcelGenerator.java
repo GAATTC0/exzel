@@ -9,15 +9,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.slf4j.helpers.MessageFormatter;
 
+import java.awt.Color;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -51,6 +56,8 @@ public class ExcelGenerator {
     private final Table<String, Integer, String> WORKBOOK_COLUMN_NAME = HashBasedTable.create();
     private final Map<ExcelStyle, CellStyle> STYLE_CACHE = new HashMap<>();
     private final SXSSFWorkbook workBook = new SXSSFWorkbook();
+    private final XSSFCellStyle dataRowStyleOdd = ((XSSFCellStyle) workBook.createCellStyle());
+    private final XSSFCellStyle dataRowStyleEven = ((XSSFCellStyle) workBook.createCellStyle());
     private final Object source;
 
     public ExcelGenerator(Object source) {
@@ -59,6 +66,7 @@ public class ExcelGenerator {
 
     public Workbook generate() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
+        createDataRowStyle();
         dataBinding(source, DEFAULT_FIELD_START_ROW);
         transferToWorkbook();
         log.info("[ExcelGenerator] excel workbook generated successfully from {}, cost: {}",
@@ -66,6 +74,13 @@ public class ExcelGenerator {
                 stopwatch.stop()
         );
         return workBook;
+    }
+
+    private void createDataRowStyle() {
+        dataRowStyleOdd.setFillForegroundColor(new XSSFColor(new Color(204, 232, 255)));
+        dataRowStyleOdd.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        dataRowStyleEven.setFillForegroundColor(new XSSFColor(new Color(239, 243, 252)));
+        dataRowStyleEven.setFillPattern(FillPatternType.SOLID_FOREGROUND);
     }
 
     private void dataBinding(Object source, int startRow) throws IllegalAccessException {
@@ -81,7 +96,7 @@ public class ExcelGenerator {
             // 下一层级域映射
             ExcelRecursiveMapping recursiveMapping = field.getAnnotation(ExcelRecursiveMapping.class);
             if (null != recursiveMapping) {
-                startRow = bindInnerLevelField(source, startRow, field);
+                bindInnerLevelField(source, startRow, field);
             }
         }
     }
@@ -118,17 +133,17 @@ public class ExcelGenerator {
         WORKBOOK_COLUMN_NAME.put(sheetName, columnIndex, columnName);
     }
 
-    private int bindInnerLevelField(Object source, int startRow, Field field) throws IllegalAccessException {
+    private void bindInnerLevelField(Object source, int startRow, Field field) throws IllegalAccessException {
         boolean innerIterable = isIterable(field.getType());
         if (innerIterable) {
             Iterable<?> iterableField = (Iterable<?>) field.get(source);
+            int innerRow = startRow;
             for (Object fieldObj : iterableField) {
-                dataBinding(fieldObj, startRow + 1);
+                dataBinding(fieldObj, innerRow++);
             }
         } else {
             dataBinding(field.get(source), startRow);
         }
-        return startRow;
     }
 
     private Object tryFormatDateTime(Object data, boolean tryFormatDateTime) {
@@ -186,15 +201,12 @@ public class ExcelGenerator {
                 for (Map.Entry<Integer, Object> columnMapEntry : rowMapEntry.getValue().entrySet()) {
                     Integer columnNum = columnMapEntry.getKey();
                     SXSSFCell cell = row.createCell(columnNum);
+                    setCellStyle(cell, rowMapEntry.getKey());
                     setValueByType(cell, columnMapEntry.getValue(), columnStyleMap.get(columnNum));
                 }
             }
             // 调整列宽
-            for (Integer columnNum : WORKBOOK_COLUMN_NAME.row(sheetName).keySet()) {
-                if (sheet.isColumnTrackedForAutoSizing(columnNum)) {
-                    sheet.autoSizeColumn(columnNum);
-                }
-            }
+            adjustColumnSize(sheetName, sheet);
         }
     }
 
@@ -235,6 +247,14 @@ public class ExcelGenerator {
         return Iterable.class.isAssignableFrom(clazz);
     }
 
+    private void setCellStyle(SXSSFCell cell, Integer rowNum) {
+        if (rowNum % 2 == 0) {
+            cell.setCellStyle(dataRowStyleEven);
+        } else {
+            cell.setCellStyle(dataRowStyleOdd);
+        }
+    }
+
     private void setValueByType(SXSSFCell cell, Object value, ExcelStyle excelStyle) {
         if (null == excelStyle) {
             cell.setCellValue(value.toString());
@@ -243,7 +263,8 @@ public class ExcelGenerator {
         // 目前仅支持数值、文本、布尔类型
         switch (excelStyle.cellType()) {
             case NUMERIC:
-                cell.setCellValue(Long.parseLong(value.toString()));
+                String decimal = new BigDecimal(value.toString()).toPlainString();
+                cell.setCellValue(decimal);
                 break;
             case BOOLEAN:
                 cell.setCellValue(Boolean.parseBoolean(value.toString()));
@@ -251,6 +272,14 @@ public class ExcelGenerator {
             case STRING:
             default:
                 cell.setCellValue(value.toString());
+        }
+    }
+
+    private void adjustColumnSize(String sheetName, SXSSFSheet sheet) {
+        for (Integer columnNum : WORKBOOK_COLUMN_NAME.row(sheetName).keySet()) {
+            if (sheet.isColumnTrackedForAutoSizing(columnNum)) {
+                sheet.autoSizeColumn(columnNum);
+            }
         }
     }
 
