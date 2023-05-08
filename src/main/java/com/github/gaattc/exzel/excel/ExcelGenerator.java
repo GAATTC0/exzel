@@ -41,6 +41,7 @@ public class ExcelGenerator {
 
     private static final int DEFAULT_FIELD_START_ROW = 0;
     private static final String NULL = "";
+    private static final String ZERO_TIME_REPLACE = "--";
     private static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     /**
      * Map<sheetName, Table<row, column, data>>
@@ -149,7 +150,12 @@ public class ExcelGenerator {
     private Object tryFormatDateTime(Object data, boolean tryFormatDateTime) {
         data = nullless(data);
         if (tryFormatDateTime && Long.class.isAssignableFrom(data.getClass())) {
-            return DateFormatUtils.format((Long) data, PATTERN);
+            long longData = (long) data;
+            if (longData != 0L) {
+                return DateFormatUtils.format(longData, PATTERN);
+            }
+            // 为0则不展示为197001010800，而是占位符
+            return ZERO_TIME_REPLACE;
         } else {
             return data;
         }
