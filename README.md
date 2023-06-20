@@ -17,27 +17,35 @@ an easy java object to excel mapper framework based on poi with more features
 * [X] 支持Iterable接口的实现类映射时自动纵向拓展
 * [X] 支持导出到输出流
 * [X] 支持导出到httpServletResponse
-* [X] 性能统计日志
+* [x] 性能统计日志
+* [x] 支持表头文本以方法形式提供
+* [x] 支持域通过java方法计算结果作为单元格内容
 
 # 二、实现
 
 ## 1.注解定义
 
 ```java
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ExcelMapping {
-
+ 
     String sheetName() default "sheet";
-
+ 
     int columnIndex();
-
+ 
     /**
      * 若域为long类型，可以选择尝试格式化为可读日期 ExcelGenerator#PATTERN，格式化失败则使用string类型
      */
     boolean tryFormatDateTime() default false;
-
+ 
+    /**
+     * 单元格内容转换器，需要提供静态方法的完整名，允许非public方法，如："com.finebi.excel.ExcelGeneratorTest$TestForConvert#getValue"
+     * 且方法返回值需要与单元格类型匹配，否则转换无效，仍使用原数据
+     * 与{@link ExcelMapping#tryFormatDateTime()}的生效先后顺序为先执行该方法再执行日期格式化。
+     */
+    String contentConverter() default "";
+ 
 }
 ```
 
@@ -55,7 +63,6 @@ public @interface ExcelRecursiveMapping {
  * excel表头单元格样式（仅表头行，支持按列自定义）
  *
  * @author gaattc
- * @since 1.0
  * Created by gaattc on 2023/4/13
  */
 @Target(ElementType.FIELD)
@@ -67,13 +74,19 @@ public @interface ExcelStyle {
     String columnName() default "";
  
     /**
+     * 表头字符串提供者，需要提供静态方法的完整名，允许非public方法，如："com.finebi.excel.ExcelGeneratorTest$TestForConvert#getColumnName"
+     * 若与{@link ExcelStyle#columnName()}同时存在则优先使用该方法。
+     */
+    String columnNameSupplier() default "";
+ 
+    /**
      * 自动设置本列列宽
      */
     boolean autoSizeColumn() default false;
  
     IndexedColors backgroundColor() default IndexedColors.WHITE;
  
-    FillPatternType fillPatternType() default FillPatternType.NO_FILL;
+    FillPatternType fillPatternType() default FillPatternType.SOLID_FOREGROUND;
  
     HorizontalAlignment horizontalAlignment() default HorizontalAlignment.GENERAL;
  
@@ -101,6 +114,8 @@ ExcelGenerator
 ExcelExporter
 
 # 三、使用示例
+
+示例1：
 
 ```java
 
@@ -151,6 +166,48 @@ public class ExcelGeneratorTest extends TestCase {
         private final String innerStringField = "Inner#innerStringField";
     }
 
+}
+```
+
+示例2，增加对列名和单元格内容的计算：
+
+```java
+@Test
+public void testConvert() throws Exception {
+    TestForConvert source = new TestForConvert();
+    Workbook workbook = new ExcelExporter(source)
+            .generate()
+            .getWorkbook();
+    URI uri = getClass().getClassLoader().getResource("testConvert.xlsx").toURI();
+    Path path = Paths.get(uri);
+    path.toFile().createNewFile();
+    new ExcelExporter(source)
+            .generate()
+            .output(Files.newOutputStream(path));
+}
+ 
+private final static class TestForConvert {
+    // 优先使用Supplier
+    @ExcelMapping(columnIndex = 0, contentConverter = "com.finebi.excel.ExcelGeneratorTest$TestForConvert#getValue")
+    @ExcelStyle(columnName = "setColumnName", columnNameSupplier = "com.finebi.excel.ExcelGeneratorTest$TestForConvert#getColumnName")
+    private final String javaFieldName = "originValue";
+    // 其次使用设置的字段名
+    @ExcelMapping(columnIndex = 1, contentConverter = "wrong express")
+    @ExcelStyle(columnName = "setColumnName", columnNameSupplier = "wrong express")
+    private final String javaFieldName1 = "originValue";
+    // 最后默认使用javaFieldName
+    @ExcelMapping(columnIndex = 2)
+    @ExcelStyle(columnNameSupplier = "wrong express")
+    private final String javaFieldName2 = "originValue";
+ 
+    private static String getColumnName() {
+        return "suppliedColumnName";
+    }
+ 
+    private static String getValue(String originValue) {
+        return "convertedValue";
+    }
+ 
 }
 ```
 

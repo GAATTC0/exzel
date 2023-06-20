@@ -28,6 +28,12 @@ public @interface ExcelStyle {
     String columnName() default "";
 
     /**
+     * 表头字符串提供者，需要提供静态方法的完整名，允许非public方法，如："com.finebi.excel.ExcelGeneratorTest$TestForConvert#getColumnName"
+     * 若与{@link ExcelStyle#columnName()}同时存在则优先使用该方法。
+     */
+    String columnNameSupplier() default "";
+
+    /**
      * 自动设置本列列宽
      */
     boolean autoSizeColumn() default false;

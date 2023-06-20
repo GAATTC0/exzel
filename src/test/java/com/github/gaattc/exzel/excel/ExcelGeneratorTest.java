@@ -46,6 +46,20 @@ public class ExcelGeneratorTest {
         assertWorkbookEqual(workbook, expectWorkbook);
     }
 
+    @Test
+    public void testConvert() throws Exception {
+        TestForConvert source = new TestForConvert();
+        Workbook workbook = new ExcelExporter(source)
+                .generate()
+                .getWorkbook();
+        URI uri = getClass().getClassLoader().getResource("testConvert.xlsx").toURI();
+        Path path = Paths.get(uri);
+        path.toFile().createNewFile();
+        new ExcelExporter(source)
+                .generate()
+                .output(Files.newOutputStream(path));
+    }
+
     @Ignore("test for performance")
     @Test
     public void test10000Row() throws Exception {
@@ -125,6 +139,30 @@ public class ExcelGeneratorTest {
         @ExcelMapping(columnIndex = 2)
         @ExcelStyle(autoSizeColumn = true)
         private final String innerStringField = "Inner#innerStringField";
+    }
+
+    private final static class TestForConvert {
+        // 优先使用Supplier
+        @ExcelMapping(columnIndex = 0, contentConverter = "com.finebi.excel.ExcelGeneratorTest$TestForConvert#getValue")
+        @ExcelStyle(columnName = "setColumnName", columnNameSupplier = "com.finebi.excel.ExcelGeneratorTest$TestForConvert#getColumnName")
+        private final String javaFieldName = "originValue";
+        // 其次使用设置的字段名
+        @ExcelMapping(columnIndex = 1, contentConverter = "wrong express")
+        @ExcelStyle(columnName = "setColumnName", columnNameSupplier = "wrong express")
+        private final String javaFieldName1 = "originValue";
+        // 最后默认使用javaFieldName
+        @ExcelMapping(columnIndex = 2)
+        @ExcelStyle(columnNameSupplier = "wrong express")
+        private final String javaFieldName2 = "originValue";
+
+        private static String getColumnName() {
+            return "suppliedColumnName";
+        }
+
+        private static String getValue(String originValue) {
+            return "convertedValue";
+        }
+
     }
 
 }
