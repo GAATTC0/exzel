@@ -29,12 +29,10 @@ public class ExcelExporter {
      * 映射为excel工作簿对象
      */
     public ExcelExporter generate() throws Exception {
-        generateWorkBook();
+        if (null == workbook) {
+            workbook = new ExcelGenerator(source).generate();
+        }
         return this;
-    }
-
-    private void generateWorkBook() throws Exception {
-        workbook = new ExcelGenerator(source).generate();
     }
 
     /**
