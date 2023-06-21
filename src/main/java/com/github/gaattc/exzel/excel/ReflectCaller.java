@@ -1,6 +1,7 @@
 package com.github.gaattc.exzel.excel;
 
-import java.lang.reflect.Method;
+import org.joor.Reflect;
+
 import java.util.regex.Pattern;
 
 /**
@@ -23,9 +24,9 @@ public class ReflectCaller {
                 return origin;
             }
             String[] split = methodFullName.split(SPLITTER);
-            Class<?> clazz = Class.forName(split[0]);
-            Method method = clazz.getMethod(split[1], origin.getClass());
-            return method.invoke(null, origin);
+            return Reflect.onClass(split[0])
+                    .call(split[1], origin)
+                    .get();
         } catch (Throwable ignore) {
             return origin;
         }
@@ -40,9 +41,9 @@ public class ReflectCaller {
                 return EMPTY;
             }
             String[] split = methodFullName.split(SPLITTER);
-            Class<?> clazz = Class.forName(split[0]);
-            Method method = clazz.getMethod(split[1]);
-            return ((String) method.invoke(null));
+            return Reflect.onClass(split[0])
+                    .call(split[1])
+                    .get();
         } catch (Throwable ignore) {
             return EMPTY;
         }
