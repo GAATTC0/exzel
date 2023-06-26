@@ -4,7 +4,6 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.FontUnderline;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 import java.lang.annotation.ElementType;
@@ -38,7 +37,10 @@ public @interface ExcelStyle {
      */
     boolean autoSizeColumn() default false;
 
-    IndexedColors backgroundColor() default IndexedColors.WHITE;
+    /**
+     * 背景色，ARGB值
+     */
+    int backgroundColor() default 0xffffffff;
 
     FillPatternType fillPatternType() default FillPatternType.NO_FILL;
 
@@ -46,7 +48,10 @@ public @interface ExcelStyle {
 
     VerticalAlignment verticalAlignment() default VerticalAlignment.BOTTOM;
 
-    IndexedColors fontColor() default IndexedColors.BLACK;
+    /**
+     * 字体色，ARGB值
+     */
+    int fontColor() default 0xff000000;
 
     short fontSize() default 12;
 

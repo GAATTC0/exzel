@@ -10,7 +10,6 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
@@ -18,9 +17,10 @@ import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.slf4j.helpers.MessageFormatter;
 
-import java.awt.*;
+import java.awt.Color;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -209,7 +209,7 @@ public class ExcelGenerator {
                 Integer columnNum = headerColumnNameMapEntry.getKey();
                 ExcelStyle excelStyle = columnStyleMap.get(columnNum);
                 SXSSFCell headerRowCell = headerRow.createCell(columnNum);
-                CellStyle cellStyle = createStyle(workBook, excelStyle);
+                CellStyle cellStyle = createStyle(excelStyle);
                 if (null != cellStyle) {
                     headerRowCell.setCellStyle(cellStyle);
                     // 设置自动列宽追踪
@@ -237,7 +237,7 @@ public class ExcelGenerator {
         }
     }
 
-    private CellStyle createStyle(Workbook workbook, ExcelStyle excelStyle) {
+    private CellStyle createStyle(ExcelStyle excelStyle) {
         if (null == excelStyle) {
             return null;
         }
@@ -245,17 +245,17 @@ public class ExcelGenerator {
         if (null != cellStyle) {
             return cellStyle;
         }
-        CellStyle style = workbook.createCellStyle();
+        XSSFCellStyle style = ((XSSFCellStyle) workBook.createCellStyle());
         // 设置填充色
-        style.setFillForegroundColor(excelStyle.backgroundColor().index);
+        style.setFillForegroundColor(new XSSFColor(new Color(excelStyle.backgroundColor(), true)));
         style.setFillPattern(excelStyle.fillPatternType());
         // 设置对齐方式
         style.setAlignment(excelStyle.horizontalAlignment());
         style.setVerticalAlignment(excelStyle.verticalAlignment());
         // 字体样式
-        Font font = workbook.createFont();
+        XSSFFont font = ((XSSFFont) workBook.createFont());
         // 字体颜色
-        font.setColor(excelStyle.fontColor().index);
+        font.setColor(new XSSFColor(new Color(excelStyle.fontColor(), true)));
         // 字体大小
         font.setFontHeightInPoints(excelStyle.fontSize());
         // 粗体
