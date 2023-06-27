@@ -23,6 +23,7 @@ import org.slf4j.helpers.MessageFormatter;
 import java.awt.Color;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -60,9 +61,16 @@ public class ExcelGenerator {
     private final XSSFCellStyle dataRowStyleOdd = ((XSSFCellStyle) workBook.createCellStyle());
     private final XSSFCellStyle dataRowStyleEven = ((XSSFCellStyle) workBook.createCellStyle());
     private final Object source;
+    private final ClassLoader classLoader;
 
     public ExcelGenerator(Object source) {
         this.source = source;
+        classLoader = this.getClass().getClassLoader();
+    }
+
+    public ExcelGenerator(Object source, ClassLoader classLoader) {
+        this.source = source;
+        this.classLoader = classLoader;
     }
 
     public Workbook generate() throws Exception {
@@ -150,7 +158,7 @@ public class ExcelGenerator {
         // 先进行转换计算
         String converter = excelMapping.contentConverter();
         if (null != converter) {
-            data = ReflectCaller.convert(converter, data);
+            data = ReflectCaller.function(converter, data, classLoader);
         }
         // 最后尝试格式化日期
         if (excelMapping.tryFormatDateTime() && Long.class.isAssignableFrom(data.getClass())) {
@@ -185,7 +193,7 @@ public class ExcelGenerator {
             String setColumnedName = excelStyle.columnName();
             // 优先使用supplier提供的字段名
             if (!Strings.isNullOrEmpty(columnNameSupplier)) {
-                String columnName = ReflectCaller.supplier(columnNameSupplier);
+                String columnName = ReflectCaller.supplier(columnNameSupplier, classLoader);
                 if (!Strings.isNullOrEmpty(columnName)) {
                     return columnName;
                 }
@@ -289,7 +297,11 @@ public class ExcelGenerator {
         // 目前仅支持数值、文本、布尔类型
         switch (excelStyle.cellType()) {
             case NUMERIC:
-                String decimal = new BigDecimal(value.toString()).toPlainString();
+                String decimal = new BigDecimal(value.toString())
+                        // todo 这里的特性考虑要不要开放给外部自定
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .stripTrailingZeros()
+                        .toPlainString();
                 cell.setCellValue(decimal);
                 break;
             case BOOLEAN:

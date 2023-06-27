@@ -4,6 +4,7 @@ package com.github.gaattc.exzel.excel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import sun.reflect.Reflection;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -30,7 +31,16 @@ public class ExcelExporter {
      */
     public ExcelExporter generate() throws Exception {
         if (null == workbook) {
-            workbook = new ExcelGenerator(source).generate();
+            try {
+                // https://www.itzhai.com/get-invoker-by-stacktrace-and-getcallerclass.html todo：考虑jdk兼容性问题
+                Class<?> callerClass = Reflection.getCallerClass(2);
+                workbook = new ExcelGenerator(source, callerClass.getClassLoader()).generate();
+            } catch (Error e) {
+                // 使用当前类加载器调用，将可能导致自定义列名和单元格值处理逻辑失效
+                log.warn("get caller class error, {}", e.toString());
+                workbook = new ExcelGenerator(source).generate();
+            }
+
         }
         return this;
     }
