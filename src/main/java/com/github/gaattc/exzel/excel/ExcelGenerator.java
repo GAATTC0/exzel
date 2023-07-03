@@ -157,7 +157,7 @@ public class ExcelGenerator {
         data = nullless(data);
         // 先进行转换计算
         String converter = excelMapping.contentConverter();
-        if (null != converter) {
+        if (!Strings.isNullOrEmpty(converter)) {
             data = ReflectCaller.function(converter, data, classLoader);
         }
         // 最后尝试格式化日期
