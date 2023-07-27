@@ -115,7 +115,7 @@ public class ExcelGenerator {
         Table<Integer, Integer, Object> sheet = WORKBOOK_DATA.computeIfAbsent(sheetName, i -> HashBasedTable.create());
         int columnIndex = excelMapping.columnIndex();
         Object fieldData = field.get(source);
-        if (isIterable(field.getType())) {
+        if (isIterable(field.getType()) && fieldData != null) {
             Iterator<?> iterator = ((Iterable<?>) fieldData).iterator();
             for (int row = 0; iterator.hasNext(); row++) {
                 Object data = calculateData(iterator.next(), excelMapping);

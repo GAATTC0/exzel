@@ -47,6 +47,17 @@ public class ExcelGeneratorTest {
     }
 
     @Test
+    public void testNullField() throws Exception {
+        Object obj = new Object() {
+            @ExcelMapping(columnIndex = 0)
+            private final List<Object> nullList = null;
+        };
+        Workbook workbook = new ExcelExporter(obj)
+                .generate()
+                .getWorkbook();
+    }
+
+    @Test
     public void testConvert() throws Exception {
         TestForConvert source = new TestForConvert();
         Workbook workbook = new ExcelExporter(source)
